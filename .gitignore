@@ -19,6 +19,9 @@ Thumbs.db
 # Jupyter notebook checkpoints
 .ipynb_checkpoints/
 
+# Resource files
+src/main/resources/*
+
 # Log files
 *.log
 
