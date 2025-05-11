@@ -40,27 +40,7 @@ class PieceUI:
 
 
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("Piece Transparency Test")
+
     
-    green_frame = tk.Frame(root, bg="#769656", padx=20, pady=20)
-    light_frame = tk.Frame(root, bg="#eeeed2", padx=20, pady=20)
-    green_frame.pack()
-    light_frame.pack()
     
-    piece_ui = PieceUI(65)
     
-    for piece_id in [1, -1]:
-        green_label = tk.Label(green_frame, bg="#769656")
-        light_label = tk.Label(light_frame, bg="#eeeed2")
-        
-        piece_image = piece_ui.get_piece_image(piece_id)
-        if piece_image:
-            green_label.configure(image=piece_image)
-            light_label.configure(image=piece_image)
-            
-        green_label.pack(side=tk.LEFT, padx=5)
-        light_label.pack(side=tk.LEFT, padx=5)
-    
-    root.mainloop()
