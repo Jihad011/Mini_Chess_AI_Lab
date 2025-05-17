@@ -67,7 +67,8 @@ class Engine:
 
         # main alpha-beta search
         if board_state.is_check_mate():
-            return -self.CHECK_MATE_SCORE if is_maximizing_player else self.CHECK_MATE_SCORE
+            score = self.CHECK_MATE_SCORE + depth
+            return -score if is_maximizing_player else score
 
         if depth == 0:
             return evaluate_board(board_state, self.engine_white_turn)
@@ -136,13 +137,17 @@ class Engine:
 
     def move_ordering(self, moves: list[MoveState]) -> list[MoveState]:
         def move_score(move: MoveState) -> int:
+            score = 0
             if move.captured_piece:
-                # Capture value
+                # MVV-LVA (Most Valuable Victim - Least Valuable Attacker)
                 captured_value = PIECE_VALUES.get(abs(move.captured_piece), 0)
-                return captured_value + 1000
-            return 0  # Non-captures get lower score
+                attacker_value = PIECE_VALUES.get(abs(move.moved_piece), 0)
+                score += captured_value * 10 - attacker_value
+
+            return score
 
         return sorted(moves, key=move_score, reverse=True)
+
 
 
     def gen_and_order_move(self, board_state: BoardState) -> list[MoveState]:
