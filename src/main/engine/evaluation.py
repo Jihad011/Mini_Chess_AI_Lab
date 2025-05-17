@@ -1,69 +1,53 @@
 from src.main.gameplay.board_state import BoardState
 from src.main.utils.utils import *
+from src.main.utils.constants import *
+from src.main.utils.engine_constants import *
+from typing import NamedTuple
 
-# Position bonus maps for 5x6 board_state (white perspective)
-PAWN_POSITION_BONUS = [
-    [80, 80, 80, 80, 80],    # Almost promoted
-    [50, 50, 50, 50, 50],    # Near promotion
-    [30, 30, 40, 30, 30],    # Advanced
-    [20, 20, 30, 20, 20],    # Past middle
-    [10, 10, 20, 10, 10],    # Moving out
-    [0,  0,  0,  0,  0]      # Starting position
-]
 
-KNIGHT_POSITION_BONUS = [
-    [-20, -10,  0, -10, -20],
-    [-10,  0,  10,  0, -10],
-    [0,   10,  20, 10,  0],
-    [0,   10,  20, 10,  0],
-    [-10,  0,  10,  0, -10],
-    [-20, -10,  0, -10, -20]
-]
+class BoardFeatures(NamedTuple):
+    material_difference: int
+    piece_counts: dict[int, int]  # piece type -> count on board
+    positional_score: int
+    current_piece_count: int
 
-BISHOP_POSITION_BONUS = [
-    [-10, -5,  0, -5, -10],
-    [-5,  0,  10,  0, -5],
-    [0,   10, 15, 10,  0],
-    [0,   10, 15, 10,  0],
-    [-5,  0,  10,  0, -5],
-    [-10, -5,  0, -5, -10]
-]
 
-ROOK_POSITION_BONUS = [
-    [0,  0,  5,  0,  0],
-    [5,  5,  5,  5,  5],
-    [0,  0,  0,  0,  0],
-    [0,  0,  0,  0,  0],
-    [5,  5,  5,  5,  5],
-    [0,  0,  5,  0,  0]
-]
 
-QUEEN_POSITION_BONUS = [
-    [-10, -5,  0, -5, -10],
-    [-5,  0,  5,  0, -5],
-    [0,   5,  10, 5,  0],
-    [0,   5,  10, 5,  0],
-    [-5,  0,  5,  0, -5],
-    [-10, -5,  0, -5, -10]
-]
+def extract_board_features(board_state: BoardState, engine_white_turn: bool) -> BoardFeatures:
+    board_row = len(board_state.board)
+    board_col = len(board_state.board[0])
+    material_difference = 0
+    positional_score = 0
+    current_piece_count = 0
+    piece_counts = {pt: 0 for pt in PIECE_VALUES.keys()}
 
-KING_POSITION_BONUS = [
-    [-60, -60, -60, -60, -60],
-    [-60, -60, -60, -60, -60],
-    [-40, -40, -40, -40, -40],
-    [-20, -20, -20, -20, -20],
-    [-10, -10, -10, -10, -10],
-    [20,   30,  0,  30,  20]  # Back rank is safest
-]
+    for row in range(board_row):
+        for col in range(board_col):
+            piece = board_state.board[row][col]
+            if piece == EMPTY:
+                continue
+            current_piece_count += 1
 
-POSITION_BONUS = {
-    abs(WHITE_PAWN): PAWN_POSITION_BONUS,
-    abs(WHITE_KNIGHT): KNIGHT_POSITION_BONUS,
-    abs(WHITE_BISHOP): BISHOP_POSITION_BONUS,
-    abs(WHITE_ROOK): ROOK_POSITION_BONUS,
-    abs(WHITE_QUEEN): QUEEN_POSITION_BONUS,
-    abs(WHITE_KING): KING_POSITION_BONUS
-}
+            abs_piece = abs(piece)
+            piece_counts[abs_piece] += 1
+
+            value = PIECE_VALUES.get(abs_piece, 0)
+            pos_row = row if is_white(piece) else board_row - 1 - row
+            bonus = POSITION_BONUS.get(abs_piece, [[0]*board_col]*board_row)[pos_row][col]
+
+            if is_white(piece) == engine_white_turn:
+                material_difference += value
+                positional_score += bonus
+            else:
+                material_difference -= value
+                positional_score -= bonus
+
+    return BoardFeatures(
+        material_difference=material_difference,
+        piece_counts=piece_counts,
+        positional_score=positional_score,
+        current_piece_count=current_piece_count,
+    )
 
 
 def evaluate_board(board_state: BoardState, engine_white_turn: bool) -> int:
@@ -73,49 +57,24 @@ def evaluate_board(board_state: BoardState, engine_white_turn: bool) -> int:
         Negative score if opponent has advantage,
         Zero if equal position
     """
-    board_row = len(board_state.board)
-    board_col = len(board_state.board[0])
-    score = 0
-    board = board_state.board
+    features = extract_board_features(board_state, engine_white_turn)
+    if is_insufficient_material(features):
+        return 0
 
-    for row in range(board_row):
-        for col in range(board_col):
-            piece = board[row][col]
-            if piece == EMPTY:
-                continue
+    score = features.material_difference + features.positional_score
+    if features.material_difference >= 300:
+        score += TRADE_BONUS * (TOTAL_PIECE_COUNT - features.current_piece_count)
 
-            abs_piece = abs(piece)
-            value = PIECE_VALUES.get(abs_piece, 0)
-
-            # Always use white's perspective for bonus maps
-            pos_row = row if is_white(piece) else board_row - 1 - row
-            bonus = POSITION_BONUS.get(abs_piece, [[0]*board_col]*board_row)[pos_row][col]
-
-            if is_white(piece) == engine_white_turn:
-                score += value + bonus
-            else:
-                score -= value + bonus
 
     return score
 
 
 
-# needs to be tested
-def mobility_bonus(board_state: BoardState) -> int:
-    """Calculates mobility score from current player's perspective."""
-    from src.main.gameplay.move_generator import MoveGenerator
-    
-    move_gen = MoveGenerator()
-    current_moves = len(move_gen.generate_all_moves(board_state))
-    
-    # Save current turn
-    current_turn = board_state.is_white_turn
-    
-    # Switch turn to calculate opponent's mobility
-    board_state.is_white_turn = not current_turn
-    opponent_moves = len(move_gen.generate_all_moves(board_state))
-    
-    # Restore original turn
-    board_state.is_white_turn = current_turn
-    
-    return (current_moves - opponent_moves) * 10
+def is_insufficient_material(feature: BoardFeatures) -> bool:
+
+    if feature.current_piece_count == 2:
+        return True  # King vs King
+    if feature.current_piece_count == 3 and feature.piece_counts.get(WHITE_KNIGHT, 0) == 1:
+        return True  # King vs Knight
+
+    return False
