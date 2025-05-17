@@ -118,3 +118,76 @@ class UIComponents:
             **kwargs
         )
         return frame
+
+    @staticmethod
+    def create_radio_group(
+        parent: tk.Tk | tk.Frame,
+        options: Dict[str, Any],
+        initial_value: Any,
+        command: Callable[[Any], None],
+        title: Optional[str] = None,
+        orientation: str = "vertical",  # "vertical" or "horizontal"
+        **kwargs
+    ) -> Tuple[tk.Frame, tk.StringVar]:
+        """Creates a group of radio buttons
+        
+        Args:
+            parent: Parent widget
+            options: Dictionary of {display_text: value}
+            initial_value: Initial selected value
+            command: Function to call when selection changes
+            title: Optional title for the group
+            orientation: "vertical" or "horizontal" layout
+        
+        Returns:
+            Tuple of (container frame, StringVar with selected value)
+        """
+        # Create container frame
+        container = UIComponents.create_frame(parent, **kwargs)
+        
+        # Add title if provided
+        if title:
+            title_label = tk.Label(
+                container,
+                text=title,
+                font=("Helvetica", 12, "bold"),
+                fg=UIComponents.COLORS['text'],
+                bg=UIComponents.COLORS['background'],
+            )
+            title_label.pack(pady=(0, 5))
+        
+        # Find the key for the initial value in options
+        initial_key = None
+        for key, value in options.items():
+            if value == initial_value:
+                initial_key = key
+                break
+        
+        # Create variable to track selection
+        var = tk.StringVar(value=initial_key)
+        
+        # Create a radio button frame
+        radio_frame = UIComponents.create_frame(container)
+        radio_frame.pack(pady=5)
+        
+        # Create radio buttons
+        for text, value in options.items():
+            radio = tk.Radiobutton(
+                radio_frame,
+                text=text,
+                value=text,  # Use text as value for the radio button
+                variable=var,
+                command=lambda: command(options[var.get()]),  # Convert back to actual value
+                font=("Helvetica", 11),
+                fg=UIComponents.COLORS['checkbox_fg'],
+                bg=UIComponents.COLORS['background'],
+                activebackground=UIComponents.COLORS['secondary'],
+                activeforeground=UIComponents.COLORS['text'],
+                selectcolor=UIComponents.COLORS['checkbox_bg'],
+            )
+            if orientation == "vertical":
+                radio.pack(anchor="center", pady=3)
+            else:
+                radio.pack(side=tk.LEFT, padx=10)
+        
+        return container, var

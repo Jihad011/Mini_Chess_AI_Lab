@@ -5,13 +5,13 @@ from src.main.utils.ui_constants import *
 from src.main.ui.piece_ui import PieceUI
 
 class ChessBoardUI:
-    def __init__(self, parent, on_click, board, rows: int = 6, cols: int = 5, cell_size: int = 65, color: int = GRAY):
+    def __init__(self, parent, on_click, board, rows: int = 6, cols: int = 5, cell_size: int = 65, board_color: dict = GRAY_BOARD):
         self.parent = parent
         self.on_click = on_click
         self.rows = rows
         self.cols = cols
         self.cell_size = cell_size
-        self.board_color = GREEN_BOARD
+        self.board_color = board_color
         # Temp variables
         self.cells = {}
         self.pieces = {}

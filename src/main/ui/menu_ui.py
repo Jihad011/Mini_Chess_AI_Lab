@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import PhotoImage
 from src.main.ui.gameplay_ui import GamePlayUI
 from src.main.ui.ui_components import UIComponents
-from src.main.utils.ui_constants import APP_ICON_PATH
+from src.main.utils.ui_constants import APP_ICON_PATH, GREEN_BOARD, GRAY_BOARD, BLUE_BOARD, PURPLE_BOARD, MARINE_BOARD
 
 
 class MenuUI:
@@ -21,6 +21,9 @@ class MenuUI:
         self.player_white_turn = False
         self.is_play_with_ai = False
         self.depth = 6
+        self.board_color = GREEN_BOARD
+
+        self.gameplay_ui = None
 
         self.menu_widgets = []
         self.build_menu()
@@ -35,12 +38,12 @@ class MenuUI:
 
         # Create main frame
         main_frame = self.ui.create_frame(self.root)
-        main_frame.pack(expand=True, fill='both', padx=40, pady=40)
+        main_frame.pack(expand=True, fill='both', padx=20, pady=20)
         self.menu_widgets.append(main_frame)
 
         # Create title label
         label = self.ui.create_title_label(
-            main_frame, 
+            main_frame,
             "Mini Chess",
             pady=20
         )
@@ -78,6 +81,29 @@ class MenuUI:
         )
         ai_cb.pack(pady=5)
         self.menu_widgets.append(ai_cb)
+        
+        # Board color radio group
+        def update_board_color(val):
+            self.board_color = val
+        
+        board_options = {
+            "Green": GREEN_BOARD,
+            "Gray": GRAY_BOARD,
+            "Blue": BLUE_BOARD,
+            "Purple": PURPLE_BOARD,
+            "Marine": MARINE_BOARD
+        }
+        
+        board_frame, _ = self.ui.create_radio_group(
+            settings_frame,
+            board_options,
+            self.board_color,
+            update_board_color,
+            title="Board Color",
+            orientation="horizontal"
+        )
+        board_frame.pack(pady=10)
+        self.menu_widgets.append(board_frame)
 
         # Create button frame for multiple buttons
         button_frame = self.ui.create_frame(main_frame)
@@ -94,7 +120,7 @@ class MenuUI:
         start_btn.pack(side=tk.LEFT, padx=10)
         self.menu_widgets.append(start_btn)
 
-        # Exit button using the existing create_button with danger colors
+        # Exit button
         exit_btn = self.ui.create_button(
             button_frame,
             "Exit",
@@ -121,11 +147,9 @@ class MenuUI:
             player_white_turn=self.player_white_turn,
             is_play_with_ai=self.is_play_with_ai,
             depth=self.depth,
-            return_to_menu_callback=self.show_menu
+            return_to_menu_callback=self.show_menu,
+            board_color=self.board_color
         )
 
     def show_menu(self):
         self.build_menu()
-
-if __name__ == "__main__":
-    menu_ui = MenuUI()
