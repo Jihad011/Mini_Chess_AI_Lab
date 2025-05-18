@@ -20,7 +20,7 @@ class MenuUI:
         # Settings variables
         self.player_white_turn = False
         self.is_play_with_ai = False
-        self.depth = 6
+        self.depth = 5
         self.board_color = GREEN_BOARD
 
         self.gameplay_ui = None

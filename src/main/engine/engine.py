@@ -15,6 +15,7 @@ class Engine:
         self.engine_white_turn = engine_white_turn
         self.move_generator = MoveGenerator()
         self.transposition_table = {}
+        self.tt_threshold = 200000
         self.stats = Stats()
         self.CHECK_MATE_SCORE = 1000000
 
@@ -22,8 +23,23 @@ class Engine:
     def engines_turn(self, board_state: BoardState) -> bool:
         return board_state.is_white_turn == self.engine_white_turn
 
-    def play_move(self, board_state: BoardState) -> MoveState:
+    def trim_transposition_table(self, threshold):
 
+        if len(self.transposition_table) >= threshold:
+            # Sort items by depth (higher depth entries are more valuable)
+            sorted_items = sorted(
+                self.transposition_table.items(), 
+                key=lambda x: x[1].depth,
+                reverse=True
+            )
+            # Keep only the top half
+            half_size = len(sorted_items) // 2
+            self.transposition_table = dict(sorted_items[:half_size])
+            # print(f"Trimmed transposition table from {len(sorted_items)} to {len(self.transposition_table)} entries")
+
+
+    def play_move(self, board_state: BoardState) -> MoveState:
+        # print(f"Transposition table size: {len(self.transposition_table)}")
         self.stats.reset()
         best_move = None
         best_score = float('-inf')
@@ -42,6 +58,9 @@ class Engine:
                 best_score = score
                 best_move = move
 
+        # Trim the transposition table after completing the search
+        self.trim_transposition_table(self.tt_threshold)
+        
         self.stats.evaluation = best_score
         print(f"Evaluation: {best_score}")
         return best_move
@@ -126,8 +145,8 @@ class Engine:
 
             # Store in TT
             flag = (
-                'EXACT' if alpha < min_eval < original_beta else
-                'UPPERBOUND' if min_eval <= alpha else
+                'EXACT' if original_alpha < min_eval < original_beta else
+                'UPPERBOUND' if min_eval <= original_alpha else
                 'LOWERBOUND'
             )
             self.transposition_table[key] = TTEntry(min_eval, depth, flag, best_move)

@@ -79,7 +79,7 @@ class GamePlayUI:
         # Title for controls section
         control_title = self.ui.create_title_label(
             self.control_frame,
-            "Game Controls",
+            "MiniChess",
             font_size=18,
             pady=10
         )
@@ -105,7 +105,7 @@ class GamePlayUI:
             bg=UIComponents.COLORS['primary'],
             activebackground=UIComponents.COLORS['secondary']
         )
-        undo_btn.pack(pady=10)
+        # undo_btn.pack(pady=10)
 
         # Main menu button with a different style
         menu_btn = self.ui.create_button(
