@@ -1,8 +1,10 @@
 import tkinter as tk
 from src.main.gameplay.move_state import MoveState
-from src.main.utils.constants import EMPTY
+from src.main.utils.constants import EMPTY, WHITE_QUEEN, BLACK_QUEEN
 from src.main.utils.ui_constants import *
 from src.main.ui.piece_ui import PieceUI
+from src.main.utils.utils import is_white
+
 
 class ChessBoardUI:
     def __init__(self, parent, on_click, board, rows: int = 6, cols: int = 5, cell_size: int = 65, board_color: dict = GRAY_BOARD):
@@ -22,6 +24,28 @@ class ChessBoardUI:
         self.create_board()
         self.add_pieces(board)
         self.add_hover_effect()
+
+
+
+    def on_cell_click(self, row: int, col: int):
+        """Propagate to gameplay ui"""
+        self.on_click(row, col)
+        self.last_clicked_cell = (row, col)
+
+
+    def apply_move(self, row: int, col: int, piece: int):
+        """Apply a move to the chess_board ui"""
+        self.clear_prev_piece()
+        self.draw_piece(row, col, piece)
+
+
+    def undo_move(self, last_move: MoveState):
+        """Undo a move to the chess_board ui"""
+        self.clear_piece(last_move.new_pos[0], last_move.new_pos[1])
+        if last_move.captured_piece:
+            self.draw_piece(last_move.new_pos[0], last_move.new_pos[1], last_move.captured_piece)
+        self.draw_piece(last_move.pre_pos[0], last_move.pre_pos[1], last_move.moved_piece)
+
 
     def create_board(self):
         """Create the visual chess board_state"""
@@ -50,10 +74,6 @@ class ChessBoardUI:
                     self.draw_piece(row, col, piece)
 
 
-    def on_cell_click(self, row: int, col: int):
-        """Propagate to main ui"""
-        self.on_click(row, col)
-        self.last_clicked_cell = (row, col)
 
     def draw_piece(self, row: int, col: int, piece: int):
         """Draw a piece on the board_state"""
@@ -99,12 +119,14 @@ class ChessBoardUI:
             del self.pieces[(row, col)]
 
 
-    def highlight_cell(self, moves: list[MoveState], color: str = 'yellow'):
+    def highlight_cell(self, moves: list[MoveState], color: str = '#FFD700', captured_color: str = '#FF4500'):
         """Highlight a cell to show possible moves"""
         for move in moves:
             row, col = move.new_pos
-            self.cells[(row, col)].config(bg=color)
+            highlight_color = captured_color if move.captured_piece else color
+            self.cells[(row, col)].config(bg=highlight_color)
             self.highlighted_cells.append((row, col))
+
 
     def remove_highlight(self):
         """Remove all highlights"""
@@ -158,3 +180,4 @@ class ChessBoardUI:
             row, col = position
             color = self.get_cell_color(row, col)
             cell.config(bg=color)
+

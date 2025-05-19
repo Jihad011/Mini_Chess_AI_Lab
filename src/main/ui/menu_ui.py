@@ -117,7 +117,7 @@ class MenuUI:
             self.start_game,
             width=15
         )
-        start_btn.pack(side=tk.LEFT, padx=10)
+        start_btn.pack(side="left", padx=10)
         self.menu_widgets.append(start_btn)
 
         # Exit button
@@ -129,7 +129,7 @@ class MenuUI:
             bg=UIComponents.COLORS['danger'],
             activebackground=UIComponents.COLORS['danger_hover']
         )
-        exit_btn.pack(side=tk.LEFT, padx=10)
+        exit_btn.pack(side="left", padx=10)
         self.menu_widgets.append(exit_btn)
 
 

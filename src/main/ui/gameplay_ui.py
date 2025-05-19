@@ -13,10 +13,10 @@ class GamePlayUI:
         self.player_white_turn = player_white_turn
         self.is_play_with_ai = is_play_with_ai
         self.board_color = board_color
+        self.ply_count = 0
         self.isGameOver = False
         self.game_over_msg = None
         self.status_label = None
-        print(self.player_white_turn, self.is_play_with_ai)
         self.return_to_menu_callback = return_to_menu_callback
         self.engine = Engine(depth, not self.player_white_turn)
         self.chess_game = ChessGame(self.engine, self.player_white_turn)
@@ -35,6 +35,8 @@ class GamePlayUI:
             self.board_frame,
             self.on_click_board,
             self.chess_game.get_current_board(),
+            rows=len(self.chess_game.get_current_board()),
+            cols=len(self.chess_game.get_current_board()[0]),
             cell_size=65,
             board_color=self.board_color
         )
@@ -54,6 +56,7 @@ class GamePlayUI:
 
     def restart_game(self):
 
+        self.ply_count = 0
         self.restart_game_over()
         self.engine = Engine(self.engine.depth, not self.player_white_turn)
         self.chess_game = ChessGame(self.engine, self.player_white_turn)
@@ -66,6 +69,8 @@ class GamePlayUI:
             self.board_frame,
             self.on_click_board,
             self.chess_game.get_current_board(),
+            rows=len(self.chess_game.get_current_board()),
+            cols=len(self.chess_game.get_current_board()[0]),
             cell_size=65,
             board_color=self.board_color
         )
@@ -105,7 +110,7 @@ class GamePlayUI:
             bg=UIComponents.COLORS['primary'],
             activebackground=UIComponents.COLORS['secondary']
         )
-        # undo_btn.pack(pady=10)
+        undo_btn.pack(pady=10)
 
         # Main menu button with a different style
         menu_btn = self.ui.create_button(
@@ -126,14 +131,44 @@ class GamePlayUI:
             fg=UIComponents.COLORS['text'],
             bg=UIComponents.COLORS['background'],
             wraplength=150,  # Wrap text if it's too long
-            justify=tk.CENTER
+            justify="center"
         )
         self.status_label.pack(pady=(20, 0))
 
 
 
     def undo_move(self):
-        # Implement undo move logic
+
+        # Game over or no moves
+        if self.isGameOver or self.ply_count == 0:
+            return
+        # If engines first move
+        if self.is_play_with_ai and self.ply_count <= 1:
+            return
+        # Prevent undo while engine is "thinking"
+        if self.is_play_with_ai and not self.chess_game.is_player_turn():
+            return
+        
+        # Undo AI's move first
+        if self.is_play_with_ai:
+            # Undo the engine's move
+            last_move = self.chess_game.board_state.move_history[-1]
+            self.chess_game.undo_move()
+            self.chess_board_ui.undo_move(last_move)
+            self.ply_count -= 1
+        
+        # Now undo the player's move
+        if len(self.chess_game.board_state.move_history) > 0:  # Safety check
+            last_move = self.chess_game.board_state.move_history[-1]
+            self.chess_game.undo_move()
+            self.chess_board_ui.undo_move(last_move)
+            self.ply_count -= 1
+        
+        # Reset UI states and gameplay
+        self.chess_board_ui.last_clicked_cell = None
+        self.chess_board_ui.remove_highlight()
+        self.chess_game.selected_pos = None
+        self.chess_game.valid_moves = []
         print("Undoing move...")
 
     def return_to_menu(self):
@@ -142,6 +177,7 @@ class GamePlayUI:
             self.chess_game = None
             self.engine = None
             self.chess_board_ui = None
+            self.ply_count = 0
             self.restart_game_over()
             for widget in self.root.winfo_children():
                 widget.destroy()
@@ -179,9 +215,9 @@ class GamePlayUI:
             self.chess_board_ui.remove_highlight()
             if self.chess_game.apply_move((row, col)):
                 print('Move applied')
-                print(self.chess_game.board_state.print_board())
-                self.chess_board_ui.clear_prev_piece()
-                self.chess_board_ui.draw_piece(row, col, self.chess_game.board_state.board[row][col])
+                # print(self.chess_game.board_state.print_board())
+                self.chess_board_ui.apply_move(row, col, self.chess_game.board_state.board[row][col])
+                self.ply_count += 1
                 if self.chess_game.is_game_over():
                     turn = self.chess_game.get_turn()
                     self.init_game_over(turn)
@@ -201,7 +237,9 @@ class GamePlayUI:
         move = self.chess_game.play_ai_move()
         self.chess_board_ui.clear_piece(move.pre_pos[0], move.pre_pos[1])
         self.chess_board_ui.draw_piece(move.new_pos[0], move.new_pos[1], self.chess_game.board_state.board[move.new_pos[0]][move.new_pos[1]])
-        print(self.chess_game.board_state.print_board())
+
+        self.ply_count += 1
+        # print(self.chess_game.board_state.print_board())
         if self.chess_game.is_game_over():
             turn = self.chess_game.get_turn()
             self.init_game_over(turn)
