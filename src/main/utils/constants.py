@@ -1,9 +1,5 @@
 import random
 
-from src.main.utils.move_utils import generate_knight_moves, generate_king_moves
-
-# ui_constants.py
-
 # Player
 WHITE = 1
 BLACK = -1
@@ -57,6 +53,9 @@ WHITE_PLAYER_PERSPECTIVE = [
     [WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING],
 ]
 
+BOARD_ROW = len(WHITE_PLAYER_PERSPECTIVE)
+BOARD_COL = len(WHITE_PLAYER_PERSPECTIVE[0])
+
 # WHITE_PLAYER_PERSPECTIVE = [
 #     [BLACK_KING, EMPTY, EMPTY, EMPTY, EMPTY],
 #     [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
@@ -78,9 +77,4 @@ ZOBRIST_PIECE_SQUARE = [
 ]
 
 ZOBRIST_TURN = random.getrandbits(64)
-
-
-# knight and king optimization constants
-KNIGHT_MOVES_FROM = generate_knight_moves()
-KING_MOVES_FROM = generate_king_moves()
 

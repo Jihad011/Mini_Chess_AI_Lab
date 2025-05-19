@@ -6,7 +6,8 @@ from ..utils.utils import is_opponent, is_own_piece, is_within_board
 
 class MoveGenerator:
     def __init__(self):
-        pass
+        self.KNIGHT_MOVES_FROM = self.generate_pre_knight_moves(rows=BOARD_ROW, cols=BOARD_COL)
+        self.KING_MOVES_FROM = self.generate_pre_king_moves(rows=BOARD_ROW, cols=BOARD_COL)
 
     def generate_all_moves(self, board_state: BoardState):
         rows, cols = len(board_state.board), len(board_state.board[0])
@@ -35,13 +36,13 @@ class MoveGenerator:
         elif piece == WHITE_ROOK or piece == BLACK_ROOK:
             return self.get_rook_moves(board_state, pos)
         elif piece == WHITE_KNIGHT or piece == BLACK_KNIGHT:
-            return self.get_opt_knight_moves(board_state, pos)
+            return self.get_knight_moves(board_state, pos)
         elif piece == WHITE_BISHOP or piece == BLACK_BISHOP:
             return self.get_bishop_moves(board_state, pos)
         elif piece == WHITE_QUEEN or piece == BLACK_QUEEN:
             return self.get_queen_moves(board_state, pos)
         elif piece == WHITE_KING or piece == BLACK_KING:
-            return self.get_opt_king_moves(board_state, pos)
+            return self.get_king_moves(board_state, pos)
         elif piece == EMPTY:
             return []
         else:
@@ -78,13 +79,13 @@ class MoveGenerator:
         return moves
 
 
-    def get_opt_knight_moves(self, board_state: BoardState, pos):
+    def get_knight_moves(self, board_state: BoardState, pos):
         row, col = pos
         piece = board_state.board[row][col]
         moves = []
 
         # Retrieve precomputed knight moves
-        for new_row, new_col in KNIGHT_MOVES_FROM.get((row, col), []):
+        for new_row, new_col in self.KNIGHT_MOVES_FROM.get((row, col), []):
             target = board_state.board[new_row][new_col]
 
             if target == EMPTY or is_opponent(piece, target):
@@ -142,13 +143,13 @@ class MoveGenerator:
 
 
 
-    def get_opt_king_moves(self, board_state: BoardState, pos):
+    def get_king_moves(self, board_state: BoardState, pos):
         row, col = pos
         piece = board_state.board[row][col]
         moves = []
 
         # Retrieve precomputed king moves
-        for new_row, new_col in KING_MOVES_FROM.get((row, col), []):
+        for new_row, new_col in self.KING_MOVES_FROM.get((row, col), []):
             target = board_state.board[new_row][new_col]
 
             if target == EMPTY or is_opponent(piece, target):
@@ -156,3 +157,46 @@ class MoveGenerator:
                 moves.append(move_state)
 
         return moves
+
+
+
+
+    # Move optimization functions
+    def generate_pre_knight_moves(self, rows=6, cols=5):
+        """Generate a dictionary of precomputed knight moves for each board square."""
+        knight_deltas = [
+            (-2, -1), (-2, +1),
+            (-1, -2), (-1, +2),
+            (+1, -2), (+1, +2),
+            (+2, -1), (+2, +1)
+        ]
+
+        moves_from = {}
+
+        for r in range(rows):
+            for c in range(cols):
+                moves = []
+                for dr, dc in knight_deltas:
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < rows and 0 <= nc < cols:
+                        moves.append((nr, nc))
+                moves_from[(r, c)] = moves
+
+        return moves_from
+
+
+    def generate_pre_king_moves(self, rows=6, cols=5):
+        moves_from = {}
+        for r in range(rows):
+            for c in range(cols):
+                moves = []
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        if dr == 0 and dc == 0:
+                            continue
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < rows and 0 <= nc < cols:
+                            moves.append((nr, nc))
+                moves_from[(r, c)] = moves
+        return moves_from
+
