@@ -53,32 +53,6 @@ class GamePlayUI:
             self.root.after(1000, self.on_engine_move)
 
 
-
-    def restart_game(self):
-
-        self.ply_count = 0
-        self.restart_game_over()
-        self.engine = Engine(self.engine.depth, not self.player_white_turn)
-        self.chess_game = ChessGame(self.engine, self.player_white_turn)
-        # Clear old chess board UI widgets
-        for widget in self.board_frame.winfo_children():
-            widget.destroy()
-
-        # Create chess board ui
-        self.chess_board_ui = ChessBoardUI(
-            self.board_frame,
-            self.on_click_board,
-            self.chess_game.get_current_board(),
-            rows=len(self.chess_game.get_current_board()),
-            cols=len(self.chess_game.get_current_board()[0]),
-            cell_size=65,
-            board_color=self.board_color
-        )
-
-        # Engine move first
-        if is_ai_turn(self.is_play_with_ai, self.player_white_turn):
-            self.root.after(1000, self.on_engine_move)
-
         
     def add_controls(self):
         # Title for controls section
@@ -136,6 +110,33 @@ class GamePlayUI:
         self.status_label.pack(pady=(20, 0))
 
 
+    def restart_game(self):
+
+        self.ply_count = 0
+        self.restart_game_over()
+        self.engine = Engine(self.engine.depth, not self.player_white_turn)
+        self.chess_game = ChessGame(self.engine, self.player_white_turn)
+        # Clear old chess board UI widgets
+        for widget in self.board_frame.winfo_children():
+            widget.destroy()
+
+        # Create chess board ui
+        self.chess_board_ui = ChessBoardUI(
+            self.board_frame,
+            self.on_click_board,
+            self.chess_game.get_current_board(),
+            rows=len(self.chess_game.get_current_board()),
+            cols=len(self.chess_game.get_current_board()[0]),
+            cell_size=65,
+            board_color=self.board_color
+        )
+
+        # Engine move first
+        if is_ai_turn(self.is_play_with_ai, self.player_white_turn):
+            self.root.after(1000, self.on_engine_move)
+
+
+
 
     def undo_move(self):
 
@@ -152,23 +153,21 @@ class GamePlayUI:
         # Undo AI's move first
         if self.is_play_with_ai:
             # Undo the engine's move
-            last_move = self.chess_game.board_state.move_history[-1]
+            last_move = self.chess_game.get_last_move()
             self.chess_game.undo_move()
             self.chess_board_ui.undo_move(last_move)
             self.ply_count -= 1
         
         # Now undo the player's move
         if len(self.chess_game.board_state.move_history) > 0:  # Safety check
-            last_move = self.chess_game.board_state.move_history[-1]
+            last_move = self.chess_game.get_last_move()
             self.chess_game.undo_move()
             self.chess_board_ui.undo_move(last_move)
             self.ply_count -= 1
         
         # Reset UI states and gameplay
-        self.chess_board_ui.last_clicked_cell = None
-        self.chess_board_ui.remove_highlight()
-        self.chess_game.selected_pos = None
-        self.chess_game.valid_moves = []
+        self.chess_board_ui.reset_temp()
+        self.chess_game.reset_temp()
         print("Undoing move...")
 
     def return_to_menu(self):

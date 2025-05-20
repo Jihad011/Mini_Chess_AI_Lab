@@ -10,6 +10,7 @@ class ChessGame:
         self.move_generator = MoveGenerator()
         self.engine = engine
         self.player_white_turn = player_white_turn
+        # Temp variables
         self.selected_pos = None
         self.valid_moves = []
 
@@ -25,6 +26,13 @@ class ChessGame:
 
     def get_move_history(self):
         return self.board_state.move_history
+
+    def get_last_move(self):
+        return self.board_state.move_history[-1] if self.board_state.move_history else None
+
+    def reset_temp(self):
+        self.selected_pos = None
+        self.valid_moves = []
 
 
     def initiate_move(self, pos):

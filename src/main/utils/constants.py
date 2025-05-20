@@ -69,12 +69,12 @@ BLACK_PLAYER_PERSPECTIVE = [[row[::-1] for row in WHITE_PLAYER_PERSPECTIVE[::-1]
 
 
 
-
+random.seed(1234)
 # Initialize Zobrist table (13 piece types including empty, 6 rows, 5 columns)
 ZOBRIST_PIECE_SQUARE = [
-    [[random.getrandbits(64) for _ in range(5)] for _ in range(6)]
+    [[random.getrandbits(64) for _ in range(BOARD_COL)] for _ in range(BOARD_ROW)]
     for _ in range(13)
 ]
 
 ZOBRIST_TURN = random.getrandbits(64)
-
+random.seed()

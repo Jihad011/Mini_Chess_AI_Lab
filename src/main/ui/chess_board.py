@@ -14,9 +14,9 @@ class ChessBoardUI:
         self.cols = cols
         self.cell_size = cell_size
         self.board_color = board_color
-        # Temp variables
         self.cells = {}
         self.pieces = {}
+        # Temp variables
         self.highlighted_cells = []
         self.last_clicked_cell = None
         # Initialize PieceUI
@@ -25,6 +25,10 @@ class ChessBoardUI:
         self.add_pieces(board)
         self.add_hover_effect()
 
+
+    def reset_temp(self):
+        self.last_clicked_cell = None
+        self.remove_highlight()
 
 
     def on_cell_click(self, row: int, col: int):
