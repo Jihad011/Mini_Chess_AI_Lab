@@ -21,6 +21,7 @@
 - **Move Ordering**:
   - Captures prioritized as using MVV-LVA
 - **Basic Evaluation Function**
+- **Quiescence search** for capture moves
 
 
 ## Requirements
