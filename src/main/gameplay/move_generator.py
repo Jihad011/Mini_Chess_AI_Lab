@@ -12,7 +12,7 @@ class MoveGenerator:
     def generate_all_moves(self, board_state: BoardState):
         rows, cols = len(board_state.board), len(board_state.board[0])
 
-        # List comprehension to gather all valid moves
+        """List comprehension to gather all valid moves"""
         return [
             move
             for row in range(rows)
@@ -21,7 +21,10 @@ class MoveGenerator:
             for move in self.generate_piece_moves(board_state, (row, col))
         ]
 
-
+    def generate_capture_moves(self, board_state: BoardState) -> list[MoveState]:
+        """Generate only capture moves for quiescence search"""
+        all_moves = self.generate_all_moves(board_state)
+        return [move for move in all_moves if move.captured_piece]
 
 
     def generate_piece_moves(self, board_state: BoardState, pos):

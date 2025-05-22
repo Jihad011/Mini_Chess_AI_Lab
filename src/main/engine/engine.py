@@ -10,8 +10,10 @@ from src.main.utils.constants import *
 
 
 class Engine:
-    def __init__(self, depth=5, engine_white_turn=False):
+    def __init__(self, depth=5, engine_white_turn=False, use_quiescence=True):
         self.depth = depth
+        self.q_depth = 3
+        self.use_quiescence = use_quiescence
         self.engine_white_turn = engine_white_turn
         self.move_generator = MoveGenerator()
         self.transposition_table = {}
@@ -84,13 +86,17 @@ class Engine:
             if alpha >= beta:
                 return entry.value
 
+        self.stats.nodes_visited += 1
         # main alpha-beta search
         if board_state.is_check_mate():
             score = self.CHECK_MATE_SCORE + depth
             return -score if is_maximizing_player else score
 
         if depth == 0:
-            return evaluate_board(board_state, self.engine_white_turn)
+            if self.use_quiescence:
+                return self.quiescence_search(board_state, self.q_depth, alpha, beta, is_maximizing_player)
+            else:
+                return evaluate_board(board_state, self.engine_white_turn)
 
 
 
@@ -98,7 +104,7 @@ class Engine:
         if not possible_moves:
             return 0  # Stale-mate
 
-        self.stats.nodes_visited += 1
+
         if is_maximizing_player:
             max_eval = float('-inf')
             best_move = None
@@ -154,7 +160,115 @@ class Engine:
 
 
 
+
+    def quiescence_search(self, board_state: BoardState, depth: int, alpha: float, beta: float, is_maximizing_player: bool) -> float:
+        # Lookup position in transposition table
+        key = hash(board_state)
+        entry = self.transposition_table.get(key)
+        if entry and entry.depth >= depth:
+            if entry.flag == 'EXACT':
+                return entry.value
+            elif entry.flag == 'LOWERBOUND':
+                alpha = max(alpha, entry.value)
+            elif entry.flag == 'UPPERBOUND':
+                beta = min(beta, entry.value)
+            if alpha >= beta:
+                return entry.value
+
+        original_alpha = alpha
+        original_beta = beta
+        self.stats.q_nodes_visited += 1
+
+        # Check terminal conditions
+        if board_state.is_check_mate():
+            score = self.CHECK_MATE_SCORE + depth
+            return -score if is_maximizing_player else score
+
+        # Stand-pat: Evaluate the current position
+        stand_pat = evaluate_board(board_state, self.engine_white_turn)
+
+        # Early cutoffs
+        if stand_pat >= beta:
+            return beta
+        if alpha < stand_pat:
+            alpha = stand_pat
+
+
+        # Base case: reached max quiescence depth
+        if depth <= 0:
+            return stand_pat
+
+        # Generate only capture moves for quiescence search
+        possible_moves = self.move_generator.generate_capture_moves(board_state)
+        possible_moves = self.move_ordering(possible_moves)
+
+        if not possible_moves:
+            return stand_pat  # No captures available
+
+
+        best_move = None
+
+        if is_maximizing_player:
+            max_eval = stand_pat
+
+            for move in possible_moves:
+                board_state.make_move(move)
+                eval = self.quiescence_search(board_state, depth - 1, alpha, beta, False)
+                board_state.undo_move()
+
+                if eval > max_eval:
+                    max_eval = eval
+                    best_move = move
+                alpha = max(alpha, max_eval)
+
+                if beta <= alpha:
+                    break  # Prune the search
+
+            # Store in TT
+            flag = (
+                'EXACT' if original_alpha < max_eval < original_beta else
+                'LOWERBOUND' if max_eval >= original_beta else
+                'UPPERBOUND'
+            )
+            self.transposition_table[key] = TTEntry(max_eval, depth, flag, best_move)
+
+            return max_eval
+        else:
+            min_eval = stand_pat
+
+            for move in possible_moves:
+                board_state.make_move(move)
+                eval = self.quiescence_search(board_state, depth - 1, alpha, beta, True)
+                board_state.undo_move()
+
+                if eval < min_eval:
+                    min_eval = eval
+                    best_move = move
+                beta = min(beta, min_eval)
+
+                if beta <= alpha:
+                    break  # Prune the search
+
+            # Store in TT
+            flag = (
+                'EXACT' if original_alpha < min_eval < original_beta else
+                'UPPERBOUND' if min_eval <= original_alpha else
+                'LOWERBOUND'
+            )
+            self.transposition_table[key] = TTEntry(min_eval, depth, flag, best_move)
+
+            return min_eval
+
+
+
+
+
+
     def move_ordering(self, moves: list[MoveState]) -> list[MoveState]:
+
+        if not moves:
+            return moves
+
         def move_score(move: MoveState) -> int:
             score = 0
             if move.captured_piece:
